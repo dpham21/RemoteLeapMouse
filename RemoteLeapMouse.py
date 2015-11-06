@@ -5,8 +5,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(src_dir, arch_dir)))
 
 import websocket
 import json
-import win32api
+import win32api, win32con
 from win32api import GetSystemMetrics
+import Leap
+import time
 
 import logging
 logging.basicConfig()
@@ -22,13 +24,12 @@ def on_message(ws, message):
 	for i in range(0,len(frame_data['pointables'])):
 		finger.append(((frame_data['pointables'])[i])['id']) # Add IDs of all fingers to list
 	
-	if len(finger) > 1: # More than 1 finger, pass
-		pass
-	elif len(finger) == 1: # Exactly 1 Finger
+	# Cursor positions used for mouse movement and clicking
+	cursor_X = 0.00 
+	cursor_Y = 0.00
+	if len(finger) == 1: # Exactly 1 Finger
 		fingerString = str(finger[0])
 		if fingerString[-1] == '1': # Check if Index Finger
-			cursor_X = 0.00
-			cursor_Y = 0.00
 			screen_X_size = float(235)/GetSystemMetrics(0) # scaling factor of fingertip X position to screen size
 			screen_Y_size = float(235)/GetSystemMetrics(1) # scaling factor of fingertip Y position to screen size
 			if (frame_data['pointables'][0]['stabilizedTipPosition'][0]) > 117.5: # If fingertip reaches right edge of interaction zone, stay at right edge of screen
@@ -46,6 +47,65 @@ def on_message(ws, message):
 				cursor_Y = GetSystemMetrics(1) - int((frame_data['pointables'][0]['stabilizedTipPosition'][1] - 82.5)/screen_Y_size)
 			
 			win32api.SetCursorPos((cursor_X, cursor_Y))
+			
+	elif len(finger) == 2: # Exactly 2 Fingers
+		correctFingers = False
+		for i in range(0,len(finger)): # Check each pointable ID
+			fingerString = str(finger[i]) # Convert ID to string
+			if i == 0: # Check first pointable ID
+				if fingerString[-1] == '1': # Check if Index Finger
+					correctFingers = True # First finger is Index Finger
+				else:
+					correctFingers = False
+					break
+			elif i == 1: # Check second pointable ID
+				if fingerString[-1] == '2': # Check if Middle Finger
+					correctFingers = True # Second finger is Middle Finger
+				else:
+					correctFingers = False
+					break
+			else:
+				pass
+				
+		if correctFingers:
+			direction = []
+			for i in range(0,len(frame_data['pointables'])): # Get direction values
+				direction.append(frame_data['pointables'][i]['direction'])
+			# Get dot product of finger direction vector and gesture normal vector
+			
+			directionVector1 = Leap.Vector(direction[0][0], direction[0][1], direction[0][2])
+			directionVector2 = Leap.Vector(direction[1][0], direction[1][1], direction[1][2])
+			normalVector = Leap.Vector(frame_data['gestures'][0]['normal'][0], frame_data['gestures'][0]['normal'][1], frame_data['gestures'][0]['normal'][2])
+			
+			dotProduct1 = Leap.Vector.dot(directionVector1, normalVector)
+			dotProduct2 = Leap.Vector.dot(directionVector2, normalVector)
+			
+			# Check for clockwise/counterclockwise gesture
+			clockwise = 0 # 0 = No movement; 1 = Clockwise; 2 = Counterclockwise
+			if (dotProduct1 > 0) and (dotProduct2 > 0):
+				clockwise = 1
+			elif (dotProduct1 < 0) and (dotProduct2 < 0):
+				clockwise = 2
+			else:
+				pass
+				
+			# Left click if clockwise circle gesture
+			cursor_X = int(cursor_X)
+			cursor_Y = int(cursor_Y)
+			if clockwise == 1:
+				# perform left click
+				win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, cursor_X, cursor_Y, 0, 0)
+				win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, cursor_X, cursor_Y, 0, 0)
+				clockwise = 0
+			elif clockwise == 2:
+				# perform right click
+				win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, cursor_X, cursor_Y, 0, 0)
+				win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, cursor_X, cursor_Y, 0, 0)
+				clockwise = 0
+			else:
+				pass
+		else: # Pass
+			pass	
 	else: # Pass
 		pass
 	
