@@ -106,6 +106,25 @@ def on_message(ws, message):
 				pass
 		else: # Pass
 			pass	
+	elif len(finger) > 2:
+		gestureType = frame_data['gestures'][0]['type']
+		if gestureType == 'swipe':
+			cursor_X = int(cursor_X)
+			cursor_Y = int(cursor_Y)
+			# if magnitude of y is greated than x and z
+			if abs(frame_data['gestures'][0]['direction'][1]) > (abs(frame_data['gestures'][0]['direction'][0]) and abs(frame_data['gestures'][0]['direction'][2])):
+				if frame_data['gestures'][0]['direction'][1] > 0:
+					# hand goes from bottom to top, scroll down
+					win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, cursor_X, cursor_Y, -10, 0)
+				elif frame_data['gestures'][0]['direction'][1] < 0:
+					# hand goes from top to bottom, scroll up
+					win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, cursor_X, cursor_Y, 10, 0)
+				else:
+					pass
+			else:
+				pass
+		else:
+			pass
 	else: # Pass
 		pass
 	
