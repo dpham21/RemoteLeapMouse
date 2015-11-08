@@ -6,12 +6,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(src_dir, arch_dir)))
 import websocket
 import json
 import win32api, win32con
-from win32api import GetSystemMetrics
-import Leap
-import time
+from LeapLibrary import Leap
 
 import logging
 logging.basicConfig()
+		
+mouseMove = 0 # flag for detected if last action was click		
 		
 def on_open(ws):
 	enableMessage = "{enableGestures: true}" # Enable gestures to be used
@@ -19,6 +19,7 @@ def on_open(ws):
 	ws.send(json.dumps("{focused: true}"))
 	
 def on_message(ws, message):
+	global mouseMove
 	frame_data = json.loads(message) # Convert frame data from websocket to Python format
 	finger = []
 	for i in range(0,len(frame_data['pointables'])):
@@ -30,10 +31,10 @@ def on_message(ws, message):
 	if len(finger) == 1: # Exactly 1 Finger
 		fingerString = str(finger[0])
 		if fingerString[-1] == '1': # Check if Index Finger
-			screen_X_size = float(235)/GetSystemMetrics(0) # scaling factor of fingertip X position to screen size
-			screen_Y_size = float(235)/GetSystemMetrics(1) # scaling factor of fingertip Y position to screen size
+			screen_X_size = float(235)/win32api.GetSystemMetrics(0) # scaling factor of fingertip X position to screen size
+			screen_Y_size = float(235)/win32api.GetSystemMetrics(1) # scaling factor of fingertip Y position to screen size
 			if (frame_data['pointables'][0]['stabilizedTipPosition'][0]) > 117.5: # If fingertip reaches right edge of interaction zone, stay at right edge of screen
-				cursor_X = GetSystemMetrics(0)
+				cursor_X = win32api.GetSystemMetrics(0)
 			elif (frame_data['pointables'][0]['stabilizedTipPosition'][0]) < -117.5: # If fingertip reaches left edge of interaction zone, stay at left edge of screen
 				cursor_X = 0
 			else:
@@ -42,9 +43,9 @@ def on_message(ws, message):
 			if (frame_data['pointables'][0]['stabilizedTipPosition'][1]) > 485.7: # If fingertip reaches top edge of interaction zone, stay at top edge of screen
 				cursor_Y = 0
 			elif (frame_data['pointables'][0]['stabilizedTipPosition'][1]) < 82.5: # If fingertip reaches bottom edge of interaction zone, stay at bottom edge of screen
-				cursor_Y = GetSystemMetrics(1)
+				cursor_Y = win32api.GetSystemMetrics(1)
 			else:
-				cursor_Y = GetSystemMetrics(1) - int((frame_data['pointables'][0]['stabilizedTipPosition'][1] - 82.5)/screen_Y_size)
+				cursor_Y = win32api.GetSystemMetrics(1) - int((frame_data['pointables'][0]['stabilizedTipPosition'][1] - 82.5)/screen_Y_size)
 			
 			win32api.SetCursorPos((cursor_X, cursor_Y))
 			
@@ -97,11 +98,13 @@ def on_message(ws, message):
 				win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, cursor_X, cursor_Y, 0, 0)
 				win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, cursor_X, cursor_Y, 0, 0)
 				clockwise = 0
+				mouseMove = 0
 			elif clockwise == 2:
 				# perform right click
 				win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, cursor_X, cursor_Y, 0, 0)
 				win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, cursor_X, cursor_Y, 0, 0)
 				clockwise = 0
+				mouseMove = 0
 			else:
 				pass
 		else: # Pass
@@ -114,10 +117,10 @@ def on_message(ws, message):
 			# if magnitude of y is greated than x and z
 			if abs(frame_data['gestures'][0]['direction'][1]) > (abs(frame_data['gestures'][0]['direction'][0]) and abs(frame_data['gestures'][0]['direction'][2])):
 				if frame_data['gestures'][0]['direction'][1] > 0:
-					# hand goes from bottom to top, scroll down
+					# hand goes from bottom to top, scroll up
 					win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, cursor_X, cursor_Y, -10, 0)
 				elif frame_data['gestures'][0]['direction'][1] < 0:
-					# hand goes from top to bottom, scroll up
+					# hand goes from top to bottom, scroll down
 					win32api.mouse_event(win32con.MOUSEEVENTF_WHEEL, cursor_X, cursor_Y, 10, 0)
 				else:
 					pass
