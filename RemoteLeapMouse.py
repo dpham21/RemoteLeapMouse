@@ -31,6 +31,7 @@ def on_message(ws, message):
 	if len(finger) == 1: # Exactly 1 Finger
 		fingerString = str(finger[0])
 		if fingerString[-1] == '1': # Check if Index Finger
+			mouseMove = 1
 			screen_X_size = float(235)/win32api.GetSystemMetrics(0) # scaling factor of fingertip X position to screen size
 			screen_Y_size = float(235)/win32api.GetSystemMetrics(1) # scaling factor of fingertip Y position to screen size
 			if (frame_data['pointables'][0]['stabilizedTipPosition'][0]) > 117.5: # If fingertip reaches right edge of interaction zone, stay at right edge of screen
@@ -95,16 +96,18 @@ def on_message(ws, message):
 			cursor_Y = int(cursor_Y)
 			if clockwise == 1:
 				# perform left click
-				win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, cursor_X, cursor_Y, 0, 0)
-				win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, cursor_X, cursor_Y, 0, 0)
-				clockwise = 0
-				mouseMove = 0
+				if mouseMove == 1:
+					win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, cursor_X, cursor_Y, 0, 0)
+					win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, cursor_X, cursor_Y, 0, 0)
+					clockwise = 0
+					mouseMove = 0
 			elif clockwise == 2:
 				# perform right click
-				win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, cursor_X, cursor_Y, 0, 0)
-				win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, cursor_X, cursor_Y, 0, 0)
-				clockwise = 0
-				mouseMove = 0
+				if mouseMove == 1:
+					win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTDOWN, cursor_X, cursor_Y, 0, 0)
+					win32api.mouse_event(win32con.MOUSEEVENTF_RIGHTUP, cursor_X, cursor_Y, 0, 0)
+					clockwise = 0
+					mouseMove = 0
 			else:
 				pass
 		else: # Pass
