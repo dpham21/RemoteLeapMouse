@@ -9,7 +9,7 @@ import win32api, win32con
 from LeapLibrary import Leap
 
 import logging
-logging.basicConfig()
+logging.basicConfig(filename='errors.log', filemode='w', level=logging.DEBUG)
 		
 mouseMove = 0 # flag for detected if last action was click		
 		
